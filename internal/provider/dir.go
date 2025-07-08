@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func CreateWalkFunc(basePath, indirname string, opts ArchiveDirOpts, isArchiveEmpty *bool, process func(path string, archivePath string, info os.FileInfo) error) func(path string, info os.FileInfo, err error) error {
+func createWalkFunc(basePath string, indirname string, opts ArchiveDirOpts, isArchiveEmpty *bool, process func(path string, archivePath string, info os.FileInfo) error) func(path string, info os.FileInfo, err error) error {
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf("error encountered during file walk: %s", err)
@@ -48,7 +48,7 @@ func CreateWalkFunc(basePath, indirname string, opts ArchiveDirOpts, isArchiveEm
 
 			if realInfo.IsDir() {
 				if !opts.ExcludeSymlinkDirectories {
-					return filepath.Walk(realPath, CreateWalkFunc(archivePath, realPath, opts, isArchiveEmpty, process))
+					return filepath.Walk(realPath, createWalkFunc(archivePath, realPath, opts, isArchiveEmpty, process))
 				} else {
 					return filepath.SkipDir
 				}
