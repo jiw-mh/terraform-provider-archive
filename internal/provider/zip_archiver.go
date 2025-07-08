@@ -49,40 +49,12 @@ func (a *ZipArchiver) ArchiveFile(infilename string) error {
 		return err
 	}
 
-	content, err := os.ReadFile(infilename)
-	if err != nil {
-		return err
-	}
-
 	if err := a.open(); err != nil {
 		return err
 	}
 	defer a.close()
 
-	fh, err := zip.FileInfoHeader(fi)
-	if err != nil {
-		return fmt.Errorf("error creating file header: %s", err)
-	}
-	fh.Name = filepath.ToSlash(fi.Name())
-	fh.Method = zip.Deflate
-	//nolint:staticcheck // This is required as fh.SetModTime has been deprecated since Go 1.10 and using fh.Modified alone isn't enough when using a zero value
-	fh.SetModTime(time.Time{})
-
-	if a.outputFileMode != "" {
-		filemode, err := strconv.ParseUint(a.outputFileMode, 0, 32)
-		if err != nil {
-			return fmt.Errorf("error parsing output_file_mode value: %s", a.outputFileMode)
-		}
-		fh.SetMode(os.FileMode(filemode))
-	}
-
-	f, err := a.writer.CreateHeader(fh)
-	if err != nil {
-		return fmt.Errorf("error creating file inside archive: %s", err)
-	}
-
-	_, err = f.Write(content)
-	return err
+	return a.addFileInfo(infilename, fi.Name(), fi)
 }
 
 func checkMatch(fileName string, excludes []string) (value bool, err error) {

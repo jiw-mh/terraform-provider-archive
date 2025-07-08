@@ -66,18 +66,7 @@ func (a *TarArchiver) ArchiveFile(infilename string) error {
 	}
 	defer a.close()
 
-	header := &tar.Header{
-		Name:    filepath.ToSlash(fi.Name()),
-		Size:    fi.Size(),
-		Mode:    int64(fi.Mode()),
-		ModTime: time.Time{},
-	}
-
-	if err := a.addFile(infilename, header); err != nil {
-		return err
-	}
-
-	return err
+	return a.addFileInfo(infilename, fi.Name(), fi)
 }
 
 func (a *TarArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
