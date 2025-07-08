@@ -220,7 +220,7 @@ func archive(ctx context.Context, model fileModel) error {
 			model.Excludes.ElementsAs(ctx, &elements, false)
 
 			for i, elem := range elements {
-				excludeList[i] = elem.ValueString()
+				excludeList[i] = filepath.FromSlash(elem.ValueString())
 			}
 		}
 
@@ -236,11 +236,6 @@ func archive(ctx context.Context, model fileModel) error {
 
 		if !model.ExcludeSymlinkDirectories.IsNull() {
 			opts.ExcludeSymlinkDirectories = model.ExcludeSymlinkDirectories.ValueBool()
-		}
-
-		// ensure exclusions are OS compatible paths
-		for i := range opts.Excludes {
-			opts.Excludes[i] = filepath.FromSlash(opts.Excludes[i])
 		}
 
 		if err := archiver.ArchiveDir(indirname, opts); err != nil {
