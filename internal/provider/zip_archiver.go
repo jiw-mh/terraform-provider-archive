@@ -11,8 +11,6 @@ import (
 	"sort"
 	"strconv"
 	"time"
-
-	"github.com/bmatcuk/doublestar/v4"
 )
 
 type ZipArchiver struct {
@@ -55,24 +53,6 @@ func (a *ZipArchiver) ArchiveFile(infilename string) error {
 	defer a.close()
 
 	return a.addFileInfo(infilename, fi.Name(), fi)
-}
-
-func checkMatch(fileName string, excludes []string) (value bool, err error) {
-	for _, exclude := range excludes {
-		if exclude == "" {
-			continue
-		}
-
-		match, err := doublestar.PathMatch(exclude, fileName)
-		if err != nil {
-			return false, err
-		}
-
-		if match {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (a *ZipArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {

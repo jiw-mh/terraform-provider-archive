@@ -4,7 +4,27 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
+
+func checkMatch(fileName string, excludes []string) (value bool, err error) {
+	for _, exclude := range excludes {
+		if exclude == "" {
+			continue
+		}
+
+		match, err := doublestar.PathMatch(exclude, fileName)
+		if err != nil {
+			return false, err
+		}
+
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 func createWalkFunc(basePath string, indirname string, opts ArchiveDirOpts, isArchiveEmpty *bool, process func(path string, archivePath string, info os.FileInfo) error) func(path string, info os.FileInfo, err error) error {
 	return func(path string, info os.FileInfo, err error) error {
