@@ -104,15 +104,10 @@ func checkMatch(fileName string, excludes []string) (value bool, err error) {
 }
 
 func (a *ZipArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
-	err := assertValidDir(indirname)
-	if err != nil {
-		return err
-	}
-
 	// Determine whether an empty archive would be generated.
 	isArchiveEmpty := true
 
-	err = filepath.Walk(indirname, CreateWalkFunc("", indirname, opts, &isArchiveEmpty, nil))
+	err := filepath.Walk(indirname, CreateWalkFunc("", indirname, opts, &isArchiveEmpty, nil))
 	if err != nil {
 		return err
 	}

@@ -81,15 +81,10 @@ func (a *TarArchiver) ArchiveFile(infilename string) error {
 }
 
 func (a *TarArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
-	err := assertValidDir(indirname)
-	if err != nil {
-		return err
-	}
-
 	// Determine whether an empty archive would be generated.
 	isArchiveEmpty := true
 
-	err = filepath.Walk(indirname, CreateWalkFunc("", indirname, opts, &isArchiveEmpty, nil))
+	err := filepath.Walk(indirname, CreateWalkFunc("", indirname, opts, &isArchiveEmpty, nil))
 	if err != nil {
 		return err
 	}

@@ -228,6 +228,12 @@ func archive(ctx context.Context, model fileModel) error {
 			Excludes: excludeList,
 		}
 
+		indirname := model.SourceDir.ValueString()
+		err := assertValidDir(indirname)
+		if err != nil {
+			return err
+		}
+
 		if !model.ExcludeSymlinkDirectories.IsNull() {
 			opts.ExcludeSymlinkDirectories = model.ExcludeSymlinkDirectories.ValueBool()
 		}
@@ -237,7 +243,7 @@ func archive(ctx context.Context, model fileModel) error {
 			opts.Excludes[i] = filepath.FromSlash(opts.Excludes[i])
 		}
 
-		if err := archiver.ArchiveDir(model.SourceDir.ValueString(), opts); err != nil {
+		if err := archiver.ArchiveDir(indirname, opts); err != nil {
 			return fmt.Errorf("error archiving directory: %s", err)
 		}
 	case !model.SourceFile.IsNull():
