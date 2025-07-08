@@ -1197,3 +1197,81 @@ func TestZipArchiveFile_SourceExcluded(t *testing.T) {
 		},
 	})
 }
+
+// TestZipArchiveFile_SourcePath verifies that source content as base64 is included
+func TestZipArchiveFile_SourcePath(t *testing.T) {
+	td := t.TempDir()
+
+	f := filepath.Join(td, "zip_file_acc_test.zip")
+
+	var fileSize string
+
+	r.ParallelTest(t, r.TestCase{
+		ProtoV5ProviderFactories: protoV5ProviderFactories(),
+		Steps: []r.TestStep{
+			{
+				Config: fmt.Sprintf(`
+			data "archive_file" "foo" {
+			 type                        = "zip"
+			 source {
+			    source_path = "%s"
+				filename = "test.txt"
+			 }
+			 output_path                 = "%s"
+			 output_file_mode            = "0666"
+			}
+			`, filepath.ToSlash("test-fixtures/test-dir/test-file.txt"), filepath.ToSlash(f)),
+				Check: r.ComposeTestCheckFunc(
+					testAccArchiveFileSize(f, &fileSize),
+					r.TestCheckResourceAttrPtr("data.archive_file.foo", "output_size", &fileSize),
+					r.TestCheckResourceAttrWith("data.archive_file.foo", "output_path", func(value string) error {
+						ensureContents(t, value, map[string][]byte{
+							"test.txt": []byte("This is test content"),
+						})
+						ensureFileMode(t, value, "0666")
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestZipArchiveFile_ContentBase64 verifies that source content as base64 is included
+func TestZipArchiveFile_ContentBase64(t *testing.T) {
+	td := t.TempDir()
+
+	f := filepath.Join(td, "zip_file_acc_test.zip")
+
+	var fileSize string
+
+	r.ParallelTest(t, r.TestCase{
+		ProtoV5ProviderFactories: protoV5ProviderFactories(),
+		Steps: []r.TestStep{
+			{
+				Config: fmt.Sprintf(`
+			data "archive_file" "foo" {
+			 type                        = "zip"
+			 source {
+			    content_base64 = "aGVsbG8K"
+				filename = "test.txt"
+			 }
+			 output_path                 = "%s"
+			 output_file_mode            = "0666"
+			}
+			`, filepath.ToSlash(f)),
+				Check: r.ComposeTestCheckFunc(
+					testAccArchiveFileSize(f, &fileSize),
+					r.TestCheckResourceAttrPtr("data.archive_file.foo", "output_size", &fileSize),
+					r.TestCheckResourceAttrWith("data.archive_file.foo", "output_path", func(value string) error {
+						ensureContents(t, value, map[string][]byte{
+							"test.txt": []byte("hello\n"),
+						})
+						ensureFileMode(t, value, "0666")
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}

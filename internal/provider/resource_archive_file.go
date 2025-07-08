@@ -54,7 +54,7 @@ func (d *archiveFileResource) Schema(ctx context.Context, req resource.SchemaReq
 					Attributes: map[string]schema.Attribute{
 						"content": schema.StringAttribute{
 							Description: "Add this content to the archive with `filename` as the filename.",
-							Required:    true,
+							Optional:    true,
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplace(),
 							},
@@ -62,6 +62,20 @@ func (d *archiveFileResource) Schema(ctx context.Context, req resource.SchemaReq
 						"filename": schema.StringAttribute{
 							Description: "Set this as the filename when declaring a `source`.",
 							Required:    true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplace(),
+							},
+						},
+						"content_base64": schema.StringAttribute{
+							Description: "Add this content, base64 encoded to the archive with `filename` as the filename.",
+							Optional:    true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplace(),
+							},
+						},
+						"source_path": schema.StringAttribute{
+							Description: "Add this content, from the source location to the archive with `filename` as the filename.",
+							Optional:    true,
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplace(),
 							},

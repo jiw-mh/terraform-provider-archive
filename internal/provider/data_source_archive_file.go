@@ -60,11 +60,19 @@ func (d *archiveFileDataSource) Schema(ctx context.Context, req datasource.Schem
 					Attributes: map[string]schema.Attribute{
 						"content": schema.StringAttribute{
 							Description: "Add this content to the archive with `filename` as the filename.",
-							Required:    true,
+							Optional:    true,
 						},
 						"filename": schema.StringAttribute{
 							Description: "Set this as the filename when declaring a `source`.",
 							Required:    true,
+						},
+						"content_base64": schema.StringAttribute{
+							Description: "Add this content, base64 encoded to the archive with `filename` as the filename.",
+							Optional:    true,
+						},
+						"source_path": schema.StringAttribute{
+							Description: "Add this content, from the source location to the archive with `filename` as the filename.",
+							Optional:    true,
 						},
 					},
 				},
@@ -266,7 +274,24 @@ func archive(ctx context.Context, model fileModel) error {
 			if isMatch {
 				continue
 			}
-			content[archivePath] = []byte(elem.Content.ValueString())
+			if !elem.Content.IsNull() {
+				content[archivePath] = []byte(elem.Content.ValueString())
+			} else if !elem.ContentBase64.IsNull() {
+				bytes, err := base64.StdEncoding.DecodeString(elem.ContentBase64.ValueString())
+				if err != nil {
+					return fmt.Errorf("inproperly encoded content for %s: %w", archivePath, err)
+				}
+				content[archivePath] = bytes
+			} else if !elem.SourcePath.IsNull() {
+				sourcePath := elem.SourcePath.ValueString()
+				bytes, err := os.ReadFile(sourcePath)
+				if err != nil {
+					return fmt.Errorf("error reading file %s for archival: %s", sourcePath, err)
+				}
+				content[archivePath] = bytes
+			} else {
+				return fmt.Errorf("either content, content_base64, or source_path is required for source element: %s", archivePath)
+			}
 		}
 		if len(content) == 0 {
 			return fmt.Errorf("no files in archive")
@@ -368,8 +393,10 @@ type fileModel struct {
 }
 
 type sourceModel struct {
-	Content  types.String `tfsdk:"content"`
-	Filename types.String `tfsdk:"filename"`
+	Content       types.String `tfsdk:"content"`
+	SourcePath    types.String `tfsdk:"source_path"`
+	ContentBase64 types.String `tfsdk:"content_base64"`
+	Filename      types.String `tfsdk:"filename"`
 }
 
 type fileChecksums struct {
