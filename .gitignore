@@ -1,3 +1,5 @@
+dist
+.goreleaser.yml
 *.dll
 *.exe
 .DS_Store
