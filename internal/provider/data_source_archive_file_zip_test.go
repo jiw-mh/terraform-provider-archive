@@ -1114,3 +1114,86 @@ func TestAccZipArchiveFile_Multiple_Absolute_ExcludeSymlinkDirectories(t *testin
 		},
 	})
 }
+
+// TestZipArchiveFile_Source verifies that source configuration is included
+func TestZipArchiveFile_Source(t *testing.T) {
+	td := t.TempDir()
+
+	f := filepath.Join(td, "zip_file_acc_test.zip")
+
+	var fileSize string
+
+	r.ParallelTest(t, r.TestCase{
+		ProtoV5ProviderFactories: protoV5ProviderFactories(),
+		Steps: []r.TestStep{
+			{
+				Config: fmt.Sprintf(`
+			data "archive_file" "foo" {
+			 type                        = "zip"
+			 source {
+			    content = "hello world"
+				filename = "test.txt"
+			 }
+			 output_path                 = "%s"
+			 output_file_mode            = "0666"
+			}
+			`, filepath.ToSlash(f)),
+				Check: r.ComposeTestCheckFunc(
+					testAccArchiveFileSize(f, &fileSize),
+					r.TestCheckResourceAttrPtr("data.archive_file.foo", "output_size", &fileSize),
+					r.TestCheckResourceAttrWith("data.archive_file.foo", "output_path", func(value string) error {
+						ensureContents(t, value, map[string][]byte{
+							"test.txt": []byte("hello world"),
+						})
+						ensureFileMode(t, value, "0666")
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestZipArchiveFile_Source verifies that source configuration is included
+func TestZipArchiveFile_SourceExcluded(t *testing.T) {
+	td := t.TempDir()
+
+	f := filepath.Join(td, "zip_file_acc_test.zip")
+
+	var fileSize string
+
+	r.ParallelTest(t, r.TestCase{
+		ProtoV5ProviderFactories: protoV5ProviderFactories(),
+		Steps: []r.TestStep{
+			{
+				Config: fmt.Sprintf(`
+			data "archive_file" "foo" {
+			 type                        = "zip"
+			 source {
+			    content = "hello world"
+				filename = "test.txt"
+			 }
+		     source {
+				content = "foo"
+				filename = "foo/bar.txt"
+			 }
+			 output_path                 = "%s"
+			 output_file_mode            = "0666"
+			 excludes = ["foo/*"]
+			}
+			`, filepath.ToSlash(f)),
+				Check: r.ComposeTestCheckFunc(
+					testAccArchiveFileSize(f, &fileSize),
+					r.TestCheckResourceAttrPtr("data.archive_file.foo", "output_size", &fileSize),
+					r.TestCheckResourceAttrWith("data.archive_file.foo", "output_path", func(value string) error {
+						ensureContents(t, value, map[string][]byte{
+							"test.txt": []byte("hello world"),
+						})
+						ensureFileMode(t, value, "0666")
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}

@@ -211,19 +211,19 @@ func archive(ctx context.Context, model fileModel) error {
 		archiver.SetOutputFileMode(outputFileMode)
 	}
 
+	excludeList := make([]string, len(model.Excludes.Elements()))
+
+	if !model.Excludes.IsNull() {
+		var elements []types.String
+		model.Excludes.ElementsAs(ctx, &elements, false)
+
+		for i, elem := range elements {
+			excludeList[i] = filepath.FromSlash(elem.ValueString())
+		}
+	}
+
 	switch {
 	case !model.SourceDir.IsNull():
-		excludeList := make([]string, len(model.Excludes.Elements()))
-
-		if !model.Excludes.IsNull() {
-			var elements []types.String
-			model.Excludes.ElementsAs(ctx, &elements, false)
-
-			for i, elem := range elements {
-				excludeList[i] = filepath.FromSlash(elem.ValueString())
-			}
-		}
-
 		opts := ArchiveDirOpts{
 			Excludes: excludeList,
 		}
@@ -258,7 +258,18 @@ func archive(ctx context.Context, model fileModel) error {
 		model.Source.ElementsAs(ctx, &elements, false)
 
 		for _, elem := range elements {
-			content[elem.Filename.ValueString()] = []byte(elem.Content.ValueString())
+			archivePath := elem.Filename.ValueString()
+			isMatch, err := checkMatch(archivePath, excludeList)
+			if err != nil {
+				return fmt.Errorf("error checking excludes matches: %w", err)
+			}
+			if isMatch {
+				continue
+			}
+			content[archivePath] = []byte(elem.Content.ValueString())
+		}
+		if len(content) == 0 {
+			return fmt.Errorf("no files in archive")
 		}
 
 		if err := archiver.ArchiveMultiple(content); err != nil {
