@@ -89,7 +89,7 @@ func (a *TarArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
 	// Determine whether an empty archive would be generated.
 	isArchiveEmpty := true
 
-	err = filepath.Walk(indirname, a.createWalkFunc("", indirname, opts, &isArchiveEmpty, true))
+	err = filepath.Walk(indirname, CreateWalkFunc("", indirname, opts, &isArchiveEmpty, nil))
 	if err != nil {
 		return err
 	}
@@ -104,79 +104,18 @@ func (a *TarArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
 	}
 	defer a.close()
 
-	return filepath.Walk(indirname, a.createWalkFunc("", indirname, opts, &isArchiveEmpty, false))
+	return filepath.Walk(indirname, CreateWalkFunc("", indirname, opts, &isArchiveEmpty, a.addFileInfo))
 }
 
-func (a *TarArchiver) createWalkFunc(basePath, indirname string, opts ArchiveDirOpts, isArchiveEmpty *bool, dryRun bool) func(path string, info os.FileInfo, err error) error {
-	return func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return fmt.Errorf("error encountered during file walk: %s", err)
-		}
-
-		relname, err := filepath.Rel(indirname, path)
-		if err != nil {
-			return fmt.Errorf("error relativizing file for archival: %s", err)
-		}
-
-		archivePath := filepath.Join(basePath, relname)
-
-		isMatch, err := checkMatch(archivePath, opts.Excludes)
-		if err != nil {
-			return fmt.Errorf("error checking excludes matches: %w", err)
-		}
-
-		if info.IsDir() {
-			if isMatch {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		if isMatch {
-			return nil
-		}
-
-		if err != nil {
-			return err
-		}
-
-		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
-			realPath, err := filepath.EvalSymlinks(path)
-			if err != nil {
-				return err
-			}
-
-			realInfo, err := os.Stat(realPath)
-			if err != nil {
-				return err
-			}
-
-			if realInfo.IsDir() {
-				if !opts.ExcludeSymlinkDirectories {
-					return filepath.Walk(realPath, a.createWalkFunc(archivePath, realPath, opts, isArchiveEmpty, dryRun))
-				} else {
-					return filepath.SkipDir
-				}
-			}
-
-			info = realInfo
-		}
-
-		*isArchiveEmpty = false
-
-		if dryRun {
-			return nil
-		}
-
-		header := &tar.Header{
-			Name:    filepath.ToSlash(archivePath),
-			Size:    info.Size(),
-			Mode:    int64(info.Mode()),
-			ModTime: time.Time{},
-		}
-
-		return a.addFile(path, header)
+func (a *TarArchiver) addFileInfo(path string, archivePath string, info os.FileInfo) error {
+	header := &tar.Header{
+		Name:    filepath.ToSlash(archivePath),
+		Size:    info.Size(),
+		Mode:    int64(info.Mode()),
+		ModTime: time.Time{},
 	}
+
+	return a.addFile(path, header)
 }
 
 func (a *TarArchiver) ArchiveMultiple(content map[string][]byte) error {

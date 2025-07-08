@@ -112,7 +112,7 @@ func (a *ZipArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
 	// Determine whether an empty archive would be generated.
 	isArchiveEmpty := true
 
-	err = filepath.Walk(indirname, a.createWalkFunc("", indirname, opts, &isArchiveEmpty, true))
+	err = filepath.Walk(indirname, CreateWalkFunc("", indirname, opts, &isArchiveEmpty, nil))
 	if err != nil {
 		return err
 	}
@@ -127,95 +127,38 @@ func (a *ZipArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
 	}
 	defer a.close()
 
-	return filepath.Walk(indirname, a.createWalkFunc("", indirname, opts, &isArchiveEmpty, false))
+	return filepath.Walk(indirname, CreateWalkFunc("", indirname, opts, &isArchiveEmpty, a.addFileInfo))
 }
 
-func (a *ZipArchiver) createWalkFunc(basePath, indirname string, opts ArchiveDirOpts, isArchiveEmpty *bool, dryRun bool) func(path string, info os.FileInfo, err error) error {
-	return func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return fmt.Errorf("error encountered during file walk: %s", err)
-		}
-
-		relname, err := filepath.Rel(indirname, path)
-		if err != nil {
-			return fmt.Errorf("error relativizing file for archival: %s", err)
-		}
-
-		archivePath := filepath.Join(basePath, relname)
-
-		isMatch, err := checkMatch(archivePath, opts.Excludes)
-		if err != nil {
-			return fmt.Errorf("error checking excludes matches: %w", err)
-		}
-
-		if info.IsDir() {
-			if isMatch {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		if isMatch {
-			return nil
-		}
-
-		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
-			realPath, err := filepath.EvalSymlinks(path)
-			if err != nil {
-				return err
-			}
-
-			realInfo, err := os.Stat(realPath)
-			if err != nil {
-				return err
-			}
-
-			if realInfo.IsDir() {
-				if !opts.ExcludeSymlinkDirectories {
-					return filepath.Walk(realPath, a.createWalkFunc(archivePath, realPath, opts, isArchiveEmpty, dryRun))
-				} else {
-					return filepath.SkipDir
-				}
-			}
-
-			info = realInfo
-		}
-
-		*isArchiveEmpty = false
-
-		if dryRun {
-			return nil
-		}
-
-		fh, err := zip.FileInfoHeader(info)
-		if err != nil {
-			return fmt.Errorf("error creating file header: %s", err)
-		}
-		fh.Name = filepath.ToSlash(archivePath)
-		fh.Method = zip.Deflate
-		// fh.Modified alone isn't enough when using a zero value
-		//nolint:staticcheck
-		fh.SetModTime(time.Time{})
-
-		if a.outputFileMode != "" {
-			filemode, err := strconv.ParseUint(a.outputFileMode, 0, 32)
-			if err != nil {
-				return fmt.Errorf("error parsing output_file_mode value: %s", a.outputFileMode)
-			}
-			fh.SetMode(os.FileMode(filemode))
-		}
-
-		f, err := a.writer.CreateHeader(fh)
-		if err != nil {
-			return fmt.Errorf("error creating file inside archive: %s", err)
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("error reading file for archival: %s", err)
-		}
-		_, err = f.Write(content)
-		return err
+func (a *ZipArchiver) addFileInfo(path string, archivePath string, info os.FileInfo) error {
+	fh, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return fmt.Errorf("error creating file header: %s", err)
 	}
+	fh.Name = filepath.ToSlash(archivePath)
+	fh.Method = zip.Deflate
+	// fh.Modified alone isn't enough when using a zero value
+	//nolint:staticcheck
+	fh.SetModTime(time.Time{})
+
+	if a.outputFileMode != "" {
+		filemode, err := strconv.ParseUint(a.outputFileMode, 0, 32)
+		if err != nil {
+			return fmt.Errorf("error parsing output_file_mode value: %s", a.outputFileMode)
+		}
+		fh.SetMode(os.FileMode(filemode))
+	}
+
+	f, err := a.writer.CreateHeader(fh)
+	if err != nil {
+		return fmt.Errorf("error creating file inside archive: %s", err)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("error reading file for archival: %s", err)
+	}
+	_, err = f.Write(content)
+	return err
 }
 
 func (a *ZipArchiver) ArchiveMultiple(content map[string][]byte) error {
