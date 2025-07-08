@@ -81,17 +81,10 @@ func (a *TarArchiver) ArchiveFile(infilename string) error {
 }
 
 func (a *TarArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
-	// Determine whether an empty archive would be generated.
-	isArchiveEmpty := true
 
-	err := filepath.Walk(indirname, createWalkFunc("", indirname, opts, &isArchiveEmpty, nil))
+	err := assertArchiveDirHasFiles(indirname, opts)
 	if err != nil {
 		return err
-	}
-
-	// Return an error if an empty archive would be generated.
-	if isArchiveEmpty {
-		return fmt.Errorf("archive has not been created as it would be empty")
 	}
 
 	if err := a.open(); err != nil {
@@ -99,7 +92,7 @@ func (a *TarArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
 	}
 	defer a.close()
 
-	return filepath.Walk(indirname, createWalkFunc("", indirname, opts, &isArchiveEmpty, a.addFileInfo))
+	return walkDir(indirname, opts, a.addFileInfo)
 }
 
 func (a *TarArchiver) addFileInfo(path string, archivePath string, info os.FileInfo) error {

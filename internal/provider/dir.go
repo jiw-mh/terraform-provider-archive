@@ -66,3 +66,26 @@ func createWalkFunc(basePath string, indirname string, opts ArchiveDirOpts, isAr
 		return process(path, archivePath, info)
 	}
 }
+
+func assertArchiveDirHasFiles(indirname string, opts ArchiveDirOpts) error {
+	isArchiveEmpty := true
+
+	err := filepath.Walk(indirname, createWalkFunc("", indirname, opts, &isArchiveEmpty, nil))
+
+	if err != nil {
+		return err
+	}
+
+	// Return an error if an empty archive would be generated.
+	if isArchiveEmpty {
+		return fmt.Errorf("archive has not been created as it would be empty")
+	}
+	return nil
+}
+
+func walkDir(indirname string, opts ArchiveDirOpts, process func(path string, archivePath string, info os.FileInfo) error) error {
+	// Needed for implementation
+	isArchiveEmpty := true
+
+	return filepath.Walk(indirname, createWalkFunc("", indirname, opts, &isArchiveEmpty, process))
+}
