@@ -109,11 +109,6 @@ func (a *ZipArchiver) ArchiveDir(indirname string, opts ArchiveDirOpts) error {
 		return err
 	}
 
-	// ensure exclusions are OS compatible paths
-	for i := range opts.Excludes {
-		opts.Excludes[i] = filepath.FromSlash(opts.Excludes[i])
-	}
-
 	// Determine whether an empty archive would be generated.
 	isArchiveEmpty := true
 

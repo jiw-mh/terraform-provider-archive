@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -229,6 +230,11 @@ func archive(ctx context.Context, model fileModel) error {
 
 		if !model.ExcludeSymlinkDirectories.IsNull() {
 			opts.ExcludeSymlinkDirectories = model.ExcludeSymlinkDirectories.ValueBool()
+		}
+
+		// ensure exclusions are OS compatible paths
+		for i := range opts.Excludes {
+			opts.Excludes[i] = filepath.FromSlash(opts.Excludes[i])
 		}
 
 		if err := archiver.ArchiveDir(model.SourceDir.ValueString(), opts); err != nil {
