@@ -15,8 +15,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -24,6 +27,7 @@ import (
 	fwpath "github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -146,6 +150,25 @@ func (d *archiveFileDataSource) Schema(ctx context.Context, req datasource.Schem
 					),
 				},
 			},
+			"template_variables": schema.MapAttribute{
+				ElementType: types.StringType,
+				Description: "Variables to use in template files",
+				Optional:    true,
+				Validators: []validator.Map{
+					mapvalidator.ConflictsWith(
+						fwpath.MatchRoot("source"),
+					),
+				},
+			},
+			"template_file_suffix": schema.StringAttribute{
+				Description: "Suffix to use for template files",
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(
+						fwpath.MatchRoot("source"),
+					),
+				},
+			},
 			"excludes": schema.SetAttribute{
 				Description: "Specify files/directories to ignore when reading the `source_dir`. " +
 					"Supports glob file matching patterns including doublestar/globstar (`**`) patterns.",
@@ -220,6 +243,39 @@ func archive(ctx context.Context, model fileModel) error {
 		archiver.SetOutputFileMode(outputFileMode)
 	}
 
+	templateVariables := func(input string) (string, error) {
+		return input, nil
+	}
+	if !model.TemplateVariables.IsNull() {
+		vars := model.TemplateVariables.Elements()
+		args := make([]string, len(vars)<<1)
+		offset := 0
+		for key, value := range vars {
+			str := ""
+			switch v := value.(type) {
+			case basetypes.StringValue:
+				tflog.Info(ctx, fmt.Sprintf("its a string! %s", key))
+				str = v.ValueString()
+			default:
+				valtype := reflect.TypeOf(value)
+				tflog.Warn(ctx, fmt.Sprintf("variable %s is of unexpected type should be a string but is %s", key, valtype.String()))
+				str = v.String()
+			}
+			args[offset] = "${" + key + "}"
+			args[offset+1] = str
+			offset += 2
+		}
+		replacer := strings.NewReplacer(args...)
+		templateVariables = func(input string) (string, error) {
+			return replacer.Replace(input), nil
+		}
+	}
+
+	templateFileSuffix := ""
+	if !model.TemplateFileSuffix.IsNull() {
+		templateFileSuffix = model.TemplateFileSuffix.ValueString()
+	}
+
 	excludeList := make([]string, len(model.Excludes.Elements()))
 
 	if !model.Excludes.IsNull() {
@@ -234,7 +290,10 @@ func archive(ctx context.Context, model fileModel) error {
 	switch {
 	case !model.SourceDir.IsNull():
 		opts := ArchiveDirOpts{
-			Excludes: excludeList,
+			Excludes:           excludeList,
+			TemplateVariables:  templateVariables,
+			TemplateFileSuffix: templateFileSuffix,
+			Context:            ctx,
 		}
 
 		indirname := model.SourceDir.ValueString()
@@ -394,6 +453,8 @@ type fileModel struct {
 	OutputBase64Sha256        types.String `tfsdk:"output_base64sha256"`
 	OutputSha512              types.String `tfsdk:"output_sha512"`
 	OutputBase64Sha512        types.String `tfsdk:"output_base64sha512"`
+	TemplateVariables         types.Map    `tfsdk:"template_variables"`
+	TemplateFileSuffix        types.String `tfsdk:"template_file_suffix"`
 }
 
 type sourceModel struct {

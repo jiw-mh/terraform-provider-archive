@@ -284,6 +284,7 @@ func TestZipArchiver_Dir_Exclude_Glob_ExcludeSymlinkDirectories(t *testing.T) {
 		Excludes: []string{
 			"test-dir/test-dir1/file1.txt",
 			"**/file[2-3].txt",
+			"test-dir-with-template",
 			"test-dir-with-symlink-file",
 		},
 		ExcludeSymlinkDirectories: true,

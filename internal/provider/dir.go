@@ -4,11 +4,14 @@
 package archive
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func checkMatch(fileName string, excludes []string) (value bool, err error) {
@@ -40,7 +43,18 @@ func createWalkFunc(basePath string, indirname string, opts ArchiveDirOpts, isAr
 			return fmt.Errorf("error relativizing file for archival: %s", err)
 		}
 
+		isTemplate := false
+		if opts.TemplateFileSuffix != "" {
+			isTemplate = strings.HasSuffix(relname, opts.TemplateFileSuffix)
+		}
+		if isTemplate {
+			relname = strings.TrimSuffix(relname, opts.TemplateFileSuffix)
+		}
+
 		archivePath := filepath.Join(basePath, relname)
+		if opts.usedPaths[archivePath] {
+			return fmt.Errorf("template path and non-template path found in same folder: %s", archivePath)
+		}
 
 		isMatch, err := checkMatch(archivePath, opts.Excludes)
 		if err != nil {
@@ -86,12 +100,57 @@ func createWalkFunc(basePath string, indirname string, opts ArchiveDirOpts, isAr
 			return nil
 		}
 
+		if isTemplate {
+			tmpDir := ""
+			tmpDir, path, info, err = renderTemplate(opts.Context, filepath.Base(relname), path, opts.TemplateVariables, info.Mode())
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(tmpDir)
+		}
+
+		opts.usedPaths[archivePath] = true
+
 		return process(path, archivePath, info)
 	}
 }
 
+func renderTemplate(ctx context.Context, filename string, srcPath string, replacer func(string) (string, error), filemode os.FileMode) (string, string, os.FileInfo, error) {
+	tflog.Info(ctx, "Rendering template", map[string]any{"srcPath": srcPath, "filename": filename})
+	template, err := os.ReadFile(srcPath)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("cannot read template in %s: %s", srcPath, err)
+	}
+	result, err := replacer(string(template))
+	if err != nil {
+		return "", "", nil, fmt.Errorf("error while processing template %s: %s", srcPath, err)
+	}
+	tmpDir, err := os.MkdirTemp("", "tf-provider-archive-*")
+	if err != nil {
+		return "", "", nil, fmt.Errorf("cannot create temp dir for %s: %s", srcPath, err)
+	}
+	tmpFile := filepath.Join(tmpDir, filename)
+	err = os.WriteFile(tmpFile, []byte(result), filemode)
+	if err != nil {
+		os.RemoveAll(tmpDir)
+		return "", "", nil, fmt.Errorf("cannot write temporary file to %s: %s", tmpFile, err)
+	}
+	info, err := os.Stat(tmpFile)
+	if err != nil {
+		os.RemoveAll(tmpDir)
+		return "", "", nil, fmt.Errorf("cannot retreive stat from temporary file at %s: %s", tmpFile, err)
+	}
+	_, err = os.ReadFile(tmpFile)
+	if err != nil {
+		os.RemoveAll(tmpDir)
+		return "", "", nil, fmt.Errorf("cannot retreive temporary file: %s", err)
+	}
+	return tmpDir, tmpFile, info, nil
+}
+
 func assertArchiveDirHasFiles(indirname string, opts ArchiveDirOpts) error {
 	isArchiveEmpty := true
+	opts.usedPaths = make(map[string]bool)
 
 	err := filepath.Walk(indirname, createWalkFunc("", indirname, opts, &isArchiveEmpty, nil))
 
@@ -109,6 +168,7 @@ func assertArchiveDirHasFiles(indirname string, opts ArchiveDirOpts) error {
 func walkDir(indirname string, opts ArchiveDirOpts, process func(path string, archivePath string, info os.FileInfo) error) error {
 	// Needed for implementation
 	isArchiveEmpty := true
+	opts.usedPaths = make(map[string]bool)
 
 	return filepath.Walk(indirname, createWalkFunc("", indirname, opts, &isArchiveEmpty, process))
 }

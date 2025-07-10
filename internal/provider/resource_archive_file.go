@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -231,6 +232,25 @@ func (d *archiveFileResource) Schema(ctx context.Context, req resource.SchemaReq
 			"output_base64sha512": schema.StringAttribute{
 				Description: "Base64 Encoded SHA512 checksum of output file",
 				Computed:    true,
+			},
+			"template_variables": schema.MapAttribute{
+				ElementType: types.StringType,
+				Description: "Variables to use in template files",
+				Optional:    true,
+				Validators: []validator.Map{
+					mapvalidator.ConflictsWith(
+						fwpath.MatchRoot("source"),
+					),
+				},
+			},
+			"template_file_suffix": schema.StringAttribute{
+				Description: "Suffix to use for template files",
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(
+						fwpath.MatchRoot("source"),
+					),
+				},
 			},
 		},
 	}

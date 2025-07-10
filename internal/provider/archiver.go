@@ -4,6 +4,7 @@
 package archive
 
 import (
+	"context"
 	"fmt"
 	"os"
 )
@@ -11,6 +12,10 @@ import (
 type ArchiveDirOpts struct {
 	Excludes                  []string
 	ExcludeSymlinkDirectories bool
+	TemplateVariables         func(string) (string, error)
+	TemplateFileSuffix        string
+	Context                   context.Context
+	usedPaths                 map[string]bool
 }
 
 type Archiver interface {

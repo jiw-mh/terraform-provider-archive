@@ -381,6 +381,8 @@ func allFixturesInclSymlinks() map[string][]byte {
 		"test-symlink-dir/file3.txt":                           []byte("This is file 3"),
 		"test-symlink-dir-with-symlink-file/test-file.txt":     []byte("This is test content"),
 		"test-symlink-dir-with-symlink-file/test-symlink.txt":  []byte("This is test content"),
+		"test-dir-with-template/other":                         []byte("hello"),
+		"test-dir-with-template/test.tmpl":                     []byte("a=\"${foo}\" + b=\"${foo}\" + c=\"${bar}\" + d=\"$foo\""),
 	}
 }
 
@@ -395,5 +397,22 @@ func allFixtures() map[string][]byte {
 		"test-dir/test-file.txt":                      []byte("This is test content"),
 		"test-dir-with-symlink-file/test-file.txt":    []byte("This is test content"),
 		"test-dir-with-symlink-file/test-symlink.txt": []byte("This is test content"),
+		"test-dir-with-template/other":                []byte("hello"),
+		"test-dir-with-template/test.tmpl":            []byte("a=\"${foo}\" + b=\"${foo}\" + c=\"${bar}\" + d=\"$foo\""),
 	}
+}
+
+func testAccArchiveTemplate(format string, output string) string {
+	return fmt.Sprintf(`
+data "archive_file" "foo" {
+  type                 = "%s"
+  source_dir           = "test-fixtures/test-dir-with-template"
+  output_path          = "%s"
+  template_file_suffix = ".tmpl"
+  template_variables   = {
+    foo = "x"
+	baz = "y"
+  }
+}
+`, format, output)
 }

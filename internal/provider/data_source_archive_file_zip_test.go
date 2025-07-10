@@ -1219,3 +1219,33 @@ func TestZipArchiveFile_ContentBase64(t *testing.T) {
 		},
 	})
 }
+
+// TestZipArchiveFile_TemplateVars tests a simple template resolving.
+func TestZipArchiveFile_TemplateVars(t *testing.T) {
+	td := t.TempDir()
+
+	f := filepath.Join(td, "zip_file_acc_test.zip")
+
+	var fileSize string
+
+	r.ParallelTest(t, r.TestCase{
+		ProtoV5ProviderFactories: protoV5ProviderFactories(),
+		Steps: []r.TestStep{
+			{
+				Config: testAccArchiveTemplate("zip", f),
+				Check: r.ComposeTestCheckFunc(
+					testAccArchiveFileSize(f, &fileSize),
+					r.TestCheckResourceAttrPtr("data.archive_file.foo", "output_size", &fileSize),
+					r.TestCheckResourceAttrWith("data.archive_file.foo", "output_path", func(value string) error {
+						ensureContents(t, value, map[string][]byte{
+							"test":  []byte("a=\"x\" + b=\"x\" + c=\"${bar}\" + d=\"$foo\""),
+							"other": []byte("hello"),
+						})
+						ensureFileMode(t, value, "0644")
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}

@@ -70,6 +70,8 @@ resource "archive_file" "lambda_my_function" {
 - `source_content_filename` (String) Set this as the filename when using `source_content`. One and only one of `source`, `source_content_filename` (with `source_content`), `source_file`, or `source_dir` must be specified.
 - `source_dir` (String) Package entire contents of this directory into the archive. One and only one of `source`, `source_content_filename` (with `source_content`), `source_file`, or `source_dir` must be specified.
 - `source_file` (String) Package this file into the archive. One and only one of `source`, `source_content_filename` (with `source_content`), `source_file`, or `source_dir` must be specified.
+- `template_file_suffix` (String) Suffix to use for template files
+- `template_variables` (Map of String) Variables to use in template files
 
 ### Read-Only
 
