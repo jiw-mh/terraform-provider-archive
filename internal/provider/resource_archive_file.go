@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 var _ resource.Resource = (*archiveFileResource)(nil)
@@ -280,6 +281,7 @@ func updateModel(ctx context.Context, model *fileModel) diag.Diagnostics {
 		}
 	}
 
+	tflog.Debug(ctx, "Creating Archive.")
 	if err := archive(ctx, *model); err != nil {
 		diags.AddError(
 			"Archive creation error",
@@ -287,6 +289,7 @@ func updateModel(ctx context.Context, model *fileModel) diag.Diagnostics {
 		)
 		return diags
 	}
+	tflog.Debug(ctx, "Archive created.")
 
 	// Generate archived file stats
 	fi, err := os.Stat(outputPath)
@@ -299,6 +302,7 @@ func updateModel(ctx context.Context, model *fileModel) diag.Diagnostics {
 	}
 	model.OutputSize = types.Int64Value(fi.Size())
 
+	tflog.Debug(ctx, "Creating checksums.")
 	checksums, err := genFileChecksums(outputPath)
 	if err != nil {
 		diags.AddError(
@@ -313,6 +317,7 @@ func updateModel(ctx context.Context, model *fileModel) diag.Diagnostics {
 	model.OutputBase64Sha256 = types.StringValue(checksums.sha256Base64)
 	model.OutputSha512 = types.StringValue(checksums.sha512Hex)
 	model.OutputBase64Sha512 = types.StringValue(checksums.sha512Base64)
+	tflog.Debug(ctx, "Finished checksums.")
 
 	model.ID = types.StringValue(checksums.sha1Hex)
 

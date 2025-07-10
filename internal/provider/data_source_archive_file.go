@@ -24,6 +24,7 @@ import (
 	fwpath "github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 var _ datasource.DataSource = (*archiveFileDataSource)(nil)
@@ -275,8 +276,10 @@ func archive(ctx context.Context, model fileModel) error {
 				continue
 			}
 			if !elem.Content.IsNull() {
+				tflog.Debug(ctx, "Adding file to archive using content", map[string]any{"archivePath": archivePath})
 				content[archivePath] = []byte(elem.Content.ValueString())
 			} else if !elem.ContentBase64.IsNull() {
+				tflog.Debug(ctx, "Adding file to archive using content base64", map[string]any{"archivePath": archivePath})
 				bytes, err := base64.StdEncoding.DecodeString(elem.ContentBase64.ValueString())
 				if err != nil {
 					return fmt.Errorf("inproperly encoded content for %s: %w", archivePath, err)
@@ -284,6 +287,7 @@ func archive(ctx context.Context, model fileModel) error {
 				content[archivePath] = bytes
 			} else if !elem.SourcePath.IsNull() {
 				sourcePath := elem.SourcePath.ValueString()
+				tflog.Debug(ctx, "Adding file to archive using source path", map[string]any{"archivePath": archivePath, "sourcePath": sourcePath})
 				bytes, err := os.ReadFile(sourcePath)
 				if err != nil {
 					return fmt.Errorf("error reading file %s for archival: %s", sourcePath, err)
