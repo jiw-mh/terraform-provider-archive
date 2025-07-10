@@ -87,5 +87,10 @@ data "archive_file" "lambda_my_function" {
 
 Required:
 
-- `content` (String) Add this content to the archive with `filename` as the filename.
 - `filename` (String) Set this as the filename when declaring a `source`.
+
+Optional:
+
+- `content` (String) Add this content to the archive with `filename` as the filename.
+- `content_base64` (String) Add this content, base64 encoded to the archive with `filename` as the filename.
+- `source_path` (String) Add this content, from the source location to the archive with `filename` as the filename.
