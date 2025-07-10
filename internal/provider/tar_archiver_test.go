@@ -14,9 +14,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 func TestTarArchiver_Content(t *testing.T) {
@@ -355,8 +352,7 @@ func ensureTarContents(t *testing.T, tarFilePath string, wants map[string][]byte
 	defer gzf.Close()
 
 	tarReader := tar.NewReader(gzf)
-
-	tarFileNames := make([]string, 0, len(wants))
+	have := make(map[string][]byte)
 
 	for {
 		header, err := tarReader.Next()
@@ -370,7 +366,6 @@ func ensureTarContents(t *testing.T, tarFilePath string, wants map[string][]byte
 		}
 
 		name := header.Name
-		tarFileNames = append(tarFileNames, name)
 
 		switch header.Typeflag {
 		case tar.TypeDir:
@@ -382,16 +377,7 @@ func ensureTarContents(t *testing.T, tarFilePath string, wants map[string][]byte
 				t.Fatalf("could not read file %s in tar: %s", name, err)
 			}
 
-			wantFile, ok := wants[name]
-			if !ok {
-				t.Fatalf("missing file %s in tar", name)
-			}
-
-			wantContent := string(wantFile)
-			gotContent := buf.String()
-			if gotContent != wantContent {
-				t.Errorf("mismatched content\ngot\n%s\nwant\n%s", gotContent, wantContent)
-			}
+			have[name] = buf.Bytes()
 		default:
 			t.Fatalf("Unable to figure out type: %c in file: %s\n",
 				header.Typeflag,
@@ -400,13 +386,7 @@ func ensureTarContents(t *testing.T, tarFilePath string, wants map[string][]byte
 		}
 	}
 
-	wantFileNames := maps.Keys(wants)
-	slices.Sort(wantFileNames)
-	slices.Sort(tarFileNames)
-
-	if len(wants) != len(tarFileNames) {
-		t.Fatalf("unexpect file count in tar\ngot\n%s\nwant\n%s", tarFileNames, wantFileNames)
-	}
+	assertSameContents(t, have, wants)
 }
 
 func ensureTarFileMode(t *testing.T, tarfilepath string, outputFileMode string) {

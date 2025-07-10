@@ -6,10 +6,13 @@ package archive
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -296,6 +299,70 @@ func TestZipArchiver_Dir_Exclude_Glob_ExcludeSymlinkDirectories(t *testing.T) {
 	})
 }
 
+func Keys(m map[string][]byte) (keys []string) {
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func assertStrings(t *testing.T, message string, want []string, have []string) {
+	t.Helper()
+	want_i := 0
+	have_i := 0
+	want_prefix := "  - "
+	have_prefix := "  + "
+	diff := ""
+	for {
+		if want_i >= len(want) {
+			for ; have_i < len(have); have_i += 1 {
+				diff += have_prefix + have[have_i] + "\n"
+			}
+			break
+		}
+		if have_i >= len(have) {
+			for ; want_i < len(want); want_i += 1 {
+				diff += want_prefix + want[want_i] + "\n"
+			}
+			break
+		}
+		have_c := have[have_i]
+		want_c := want[want_i]
+		if want_c < have_c {
+			diff += want_prefix + want_c + "\n"
+			want_i += 1
+			continue
+		}
+		if have_c < want_c {
+			diff += have_prefix + have_c + "\n"
+			have_i += 1
+			continue
+		}
+		want_i += 1
+		have_i += 1
+	}
+	if diff != "" {
+		t.Fatalf("%s\n%s", message, diff)
+	}
+}
+
+func assertSameContents(t *testing.T, have map[string][]byte, wants map[string][]byte) {
+	assertStrings(t, "file name mismatch:", Keys(wants), Keys(have))
+	mismatch := ""
+	for name, wantsBytes := range wants {
+		hasBytes := have[name]
+		wantsStr := string(wantsBytes)
+		hasStr := string(hasBytes)
+		if wantsStr != hasStr {
+			mismatch += fmt.Sprintf("%s:\n  [wants]\n  \n%s\n[has]\n%s", name, wantsStr, hasStr)
+		}
+	}
+	if mismatch != "" {
+		t.Fatalf("file content mismatch:\n%s", mismatch)
+	}
+}
+
 func ensureContents(t *testing.T, zipfilepath string, wants map[string][]byte) {
 	t.Helper()
 	r, err := zip.OpenReader(zipfilepath)
@@ -304,37 +371,24 @@ func ensureContents(t *testing.T, zipfilepath string, wants map[string][]byte) {
 	}
 	defer r.Close()
 
-	if len(r.File) != len(wants) {
-		t.Errorf("mismatched file count, got %d, want %d", len(r.File), len(wants))
-	}
+	have := make(map[string][]byte)
 	for _, cf := range r.File {
-		ensureContent(t, wants, cf)
-	}
-}
+		if err != nil {
+			t.Errorf("could not open file: %s", err)
+		}
 
-func ensureContent(t *testing.T, wants map[string][]byte, got *zip.File) {
-	t.Helper()
-	want, ok := wants[got.Name]
-	if !ok {
-		t.Errorf("additional file in zip: %s", got.Name)
-		return
+		r, err := cf.Open()
+		if err != nil {
+			t.Errorf("could not open file: %s", err)
+		}
+		defer r.Close()
+		gotContentBytes, err := io.ReadAll(r)
+		if err != nil {
+			t.Errorf("could not read file: %s", err)
+		}
+		have[cf.Name] = gotContentBytes
 	}
-
-	r, err := got.Open()
-	if err != nil {
-		t.Errorf("could not open file: %s", err)
-	}
-	defer r.Close()
-	gotContentBytes, err := io.ReadAll(r)
-	if err != nil {
-		t.Errorf("could not read file: %s", err)
-	}
-
-	wantContent := string(want)
-	gotContent := string(gotContentBytes)
-	if gotContent != wantContent {
-		t.Errorf("mismatched content\ngot\n%s\nwant\n%s", gotContent, wantContent)
-	}
+	assertSameContents(t, have, wants)
 }
 
 func ensureFileMode(t *testing.T, zipfilepath string, outputFileMode string) {
