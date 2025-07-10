@@ -608,25 +608,7 @@ func TestResource_TarGzArchiveFile_Multiple_Relative(t *testing.T) {
 					testAccArchiveFileSize(f, &fileSize),
 					r.TestCheckResourceAttrPtr("archive_file.foo", "output_size", &fileSize),
 					r.TestCheckResourceAttrWith("archive_file.foo", "output_path", func(value string) error {
-						ensureTarContents(t, value, map[string][]byte{
-							"test-dir/test-dir1/file1.txt":                         []byte("This is file 1"),
-							"test-dir/test-dir1/file2.txt":                         []byte("This is file 2"),
-							"test-dir/test-dir1/file3.txt":                         []byte("This is file 3"),
-							"test-dir/test-dir2/file1.txt":                         []byte("This is file 1"),
-							"test-dir/test-dir2/file2.txt":                         []byte("This is file 2"),
-							"test-dir/test-dir2/file3.txt":                         []byte("This is file 3"),
-							"test-dir/test-file.txt":                               []byte("This is test content"),
-							"test-dir-with-symlink-dir/test-symlink-dir/file1.txt": []byte("This is file 1"),
-							"test-dir-with-symlink-dir/test-symlink-dir/file2.txt": []byte("This is file 2"),
-							"test-dir-with-symlink-dir/test-symlink-dir/file3.txt": []byte("This is file 3"),
-							"test-dir-with-symlink-file/test-file.txt":             []byte("This is test content"),
-							"test-dir-with-symlink-file/test-symlink.txt":          []byte("This is test content"),
-							"test-symlink-dir/file1.txt":                           []byte("This is file 1"),
-							"test-symlink-dir/file2.txt":                           []byte("This is file 2"),
-							"test-symlink-dir/file3.txt":                           []byte("This is file 3"),
-							"test-symlink-dir-with-symlink-file/test-file.txt":     []byte("This is test content"),
-							"test-symlink-dir-with-symlink-file/test-symlink.txt":  []byte("This is test content"),
-						})
+						ensureTarContents(t, value, allFixturesInclSymlinks())
 						ensureTarFileMode(t, value, "0666")
 						return nil
 					}),
@@ -666,25 +648,7 @@ func TestResource_TarGzArchiveFile_Multiple_Absolute(t *testing.T) {
 					testAccArchiveFileSize(f, &fileSize),
 					r.TestCheckResourceAttrPtr("archive_file.foo", "output_size", &fileSize),
 					r.TestCheckResourceAttrWith("archive_file.foo", "output_path", func(value string) error {
-						ensureTarContents(t, value, map[string][]byte{
-							"test-dir/test-dir1/file1.txt":                         []byte("This is file 1"),
-							"test-dir/test-dir1/file2.txt":                         []byte("This is file 2"),
-							"test-dir/test-dir1/file3.txt":                         []byte("This is file 3"),
-							"test-dir/test-dir2/file1.txt":                         []byte("This is file 1"),
-							"test-dir/test-dir2/file2.txt":                         []byte("This is file 2"),
-							"test-dir/test-dir2/file3.txt":                         []byte("This is file 3"),
-							"test-dir/test-file.txt":                               []byte("This is test content"),
-							"test-dir-with-symlink-dir/test-symlink-dir/file1.txt": []byte("This is file 1"),
-							"test-dir-with-symlink-dir/test-symlink-dir/file2.txt": []byte("This is file 2"),
-							"test-dir-with-symlink-dir/test-symlink-dir/file3.txt": []byte("This is file 3"),
-							"test-dir-with-symlink-file/test-file.txt":             []byte("This is test content"),
-							"test-dir-with-symlink-file/test-symlink.txt":          []byte("This is test content"),
-							"test-symlink-dir/file1.txt":                           []byte("This is file 1"),
-							"test-symlink-dir/file2.txt":                           []byte("This is file 2"),
-							"test-symlink-dir/file3.txt":                           []byte("This is file 3"),
-							"test-symlink-dir-with-symlink-file/test-file.txt":     []byte("This is test content"),
-							"test-symlink-dir-with-symlink-file/test-symlink.txt":  []byte("This is test content"),
-						})
+						ensureTarContents(t, value, allFixturesInclSymlinks())
 						ensureTarFileMode(t, value, "0666")
 						return nil
 					}),
@@ -1077,17 +1041,7 @@ func TestResource_TarGzArchiveFile_Multiple_Relative_ExcludeSymlinkDirectories(t
 					testAccArchiveFileSize(f, &fileSize),
 					r.TestCheckResourceAttrPtr("archive_file.foo", "output_size", &fileSize),
 					r.TestCheckResourceAttrWith("archive_file.foo", "output_path", func(value string) error {
-						ensureTarContents(t, value, map[string][]byte{
-							"test-dir/test-dir1/file1.txt":                []byte("This is file 1"),
-							"test-dir/test-dir1/file2.txt":                []byte("This is file 2"),
-							"test-dir/test-dir1/file3.txt":                []byte("This is file 3"),
-							"test-dir/test-dir2/file1.txt":                []byte("This is file 1"),
-							"test-dir/test-dir2/file2.txt":                []byte("This is file 2"),
-							"test-dir/test-dir2/file3.txt":                []byte("This is file 3"),
-							"test-dir/test-file.txt":                      []byte("This is test content"),
-							"test-dir-with-symlink-file/test-file.txt":    []byte("This is test content"),
-							"test-dir-with-symlink-file/test-symlink.txt": []byte("This is test content"),
-						})
+						ensureTarContents(t, value, allFixtures())
 						ensureTarFileMode(t, value, "0666")
 						return nil
 					}),
@@ -1128,17 +1082,7 @@ func TestResource_TarGzArchiveFile_Multiple_Absolute_ExcludeSymlinkDirectories(t
 					testAccArchiveFileSize(f, &fileSize),
 					r.TestCheckResourceAttrPtr("archive_file.foo", "output_size", &fileSize),
 					r.TestCheckResourceAttrWith("archive_file.foo", "output_path", func(value string) error {
-						ensureTarContents(t, value, map[string][]byte{
-							"test-dir/test-dir1/file1.txt":                []byte("This is file 1"),
-							"test-dir/test-dir1/file2.txt":                []byte("This is file 2"),
-							"test-dir/test-dir1/file3.txt":                []byte("This is file 3"),
-							"test-dir/test-dir2/file1.txt":                []byte("This is file 1"),
-							"test-dir/test-dir2/file2.txt":                []byte("This is file 2"),
-							"test-dir/test-dir2/file3.txt":                []byte("This is file 3"),
-							"test-dir/test-file.txt":                      []byte("This is test content"),
-							"test-dir-with-symlink-file/test-file.txt":    []byte("This is test content"),
-							"test-dir-with-symlink-file/test-symlink.txt": []byte("This is test content"),
-						})
+						ensureTarContents(t, value, allFixtures())
 						ensureTarFileMode(t, value, "0666")
 						return nil
 					}),

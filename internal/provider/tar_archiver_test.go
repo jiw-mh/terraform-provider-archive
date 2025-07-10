@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -229,25 +230,7 @@ func TestTarArchiver_Dir_DoNotExcludeSymlinkDirectories(t *testing.T) {
 		t.Fatalf("unexpected error: %s", err)
 	}
 
-	ensureTarContents(t, tarFilePath, map[string][]byte{
-		"test-dir/test-dir1/file1.txt":                         []byte("This is file 1"),
-		"test-dir/test-dir1/file2.txt":                         []byte("This is file 2"),
-		"test-dir/test-dir1/file3.txt":                         []byte("This is file 3"),
-		"test-dir/test-dir2/file1.txt":                         []byte("This is file 1"),
-		"test-dir/test-dir2/file2.txt":                         []byte("This is file 2"),
-		"test-dir/test-dir2/file3.txt":                         []byte("This is file 3"),
-		"test-dir/test-file.txt":                               []byte("This is test content"),
-		"test-dir-with-symlink-dir/test-symlink-dir/file1.txt": []byte("This is file 1"),
-		"test-dir-with-symlink-dir/test-symlink-dir/file2.txt": []byte("This is file 2"),
-		"test-dir-with-symlink-dir/test-symlink-dir/file3.txt": []byte("This is file 3"),
-		"test-dir-with-symlink-file/test-file.txt":             []byte("This is test content"),
-		"test-dir-with-symlink-file/test-symlink.txt":          []byte("This is test content"),
-		"test-symlink-dir/file1.txt":                           []byte("This is file 1"),
-		"test-symlink-dir/file2.txt":                           []byte("This is file 2"),
-		"test-symlink-dir/file3.txt":                           []byte("This is file 3"),
-		"test-symlink-dir-with-symlink-file/test-file.txt":     []byte("This is test content"),
-		"test-symlink-dir-with-symlink-file/test-symlink.txt":  []byte("This is test content"),
-	})
+	ensureTarContents(t, tarFilePath, allFixturesInclSymlinks())
 }
 
 func TestTarArchiver_Dir_ExcludeSymlinkDirectories(t *testing.T) {
@@ -262,17 +245,7 @@ func TestTarArchiver_Dir_ExcludeSymlinkDirectories(t *testing.T) {
 		t.Errorf("expected no error: %s", err)
 	}
 
-	ensureTarContents(t, tarFilePath, map[string][]byte{
-		"test-dir/test-dir1/file1.txt":                []byte("This is file 1"),
-		"test-dir/test-dir1/file2.txt":                []byte("This is file 2"),
-		"test-dir/test-dir1/file3.txt":                []byte("This is file 3"),
-		"test-dir/test-dir2/file1.txt":                []byte("This is file 1"),
-		"test-dir/test-dir2/file2.txt":                []byte("This is file 2"),
-		"test-dir/test-dir2/file3.txt":                []byte("This is file 3"),
-		"test-dir/test-file.txt":                      []byte("This is test content"),
-		"test-dir-with-symlink-file/test-file.txt":    []byte("This is test content"),
-		"test-dir-with-symlink-file/test-symlink.txt": []byte("This is test content"),
-	})
+	ensureTarContents(t, tarFilePath, allFixtures())
 }
 
 func TestTarArchiver_Dir_Exclude_DoNotExcludeSymlinkDirectories(t *testing.T) {
@@ -288,23 +261,10 @@ func TestTarArchiver_Dir_Exclude_DoNotExcludeSymlinkDirectories(t *testing.T) {
 		t.Fatalf("unexpected error: %s", err)
 	}
 
-	ensureTarContents(t, tarFilePath, map[string][]byte{
-		"test-dir/test-dir1/file1.txt":                         []byte("This is file 1"),
-		"test-dir/test-dir1/file2.txt":                         []byte("This is file 2"),
-		"test-dir/test-dir1/file3.txt":                         []byte("This is file 3"),
-		"test-dir/test-dir2/file1.txt":                         []byte("This is file 1"),
-		"test-dir/test-dir2/file2.txt":                         []byte("This is file 2"),
-		"test-dir/test-dir2/file3.txt":                         []byte("This is file 3"),
-		"test-dir/test-file.txt":                               []byte("This is test content"),
-		"test-dir-with-symlink-dir/test-symlink-dir/file1.txt": []byte("This is file 1"),
-		"test-dir-with-symlink-dir/test-symlink-dir/file2.txt": []byte("This is file 2"),
-		"test-dir-with-symlink-dir/test-symlink-dir/file3.txt": []byte("This is file 3"),
-		"test-dir-with-symlink-file/test-file.txt":             []byte("This is test content"),
-		"test-dir-with-symlink-file/test-symlink.txt":          []byte("This is test content"),
-		"test-symlink-dir/file2.txt":                           []byte("This is file 2"),
-		"test-symlink-dir/file3.txt":                           []byte("This is file 3"),
-		"test-symlink-dir-with-symlink-file/test-file.txt":     []byte("This is test content"),
-	})
+	wants := allFixturesInclSymlinks()
+	delete(wants, "test-symlink-dir/file1.txt")
+	delete(wants, "test-symlink-dir-with-symlink-file/test-symlink.txt")
+	ensureTarContents(t, tarFilePath, wants)
 }
 
 func TestTarArchiver_Dir_Exclude_Glob_DoNotExcludeSymlinkDirectories(t *testing.T) {
@@ -314,7 +274,7 @@ func TestTarArchiver_Dir_Exclude_Glob_DoNotExcludeSymlinkDirectories(t *testing.
 	if err := archiver.ArchiveDir("./test-fixtures", ArchiveDirOpts{
 		Excludes: []string{
 			"**/file1.txt",
-			"**/file2.*",
+			"**/file2.txt",
 			"test-dir-with-symlink-dir/test-symlink-dir",
 			"test-symlink-dir-with-symlink-file/test-symlink.txt",
 		},
@@ -322,15 +282,16 @@ func TestTarArchiver_Dir_Exclude_Glob_DoNotExcludeSymlinkDirectories(t *testing.
 		t.Fatalf("unexpected error: %s", err)
 	}
 
-	ensureTarContents(t, tarFilePath, map[string][]byte{
-		"test-dir/test-dir1/file3.txt":                     []byte("This is file 3"),
-		"test-dir/test-dir2/file3.txt":                     []byte("This is file 3"),
-		"test-dir/test-file.txt":                           []byte("This is test content"),
-		"test-dir-with-symlink-file/test-file.txt":         []byte("This is test content"),
-		"test-dir-with-symlink-file/test-symlink.txt":      []byte("This is test content"),
-		"test-symlink-dir/file3.txt":                       []byte("This is file 3"),
-		"test-symlink-dir-with-symlink-file/test-file.txt": []byte("This is test content"),
-	})
+	wants := allFixturesInclSymlinks()
+	delete(wants, "test-symlink-dir-with-symlink-file/test-symlink.txt")
+	for key := range wants {
+		if strings.HasSuffix(key, "file1.txt") ||
+			strings.HasSuffix(key, "file2.txt") ||
+			strings.HasPrefix(key, "test-dir-with-symlink-dir/test-symlink-dir") {
+			delete(wants, key)
+		}
+	}
+	ensureTarContents(t, tarFilePath, wants)
 }
 
 func TestTarArchiver_Dir_Exclude_ExcludeSymlinkDirectories(t *testing.T) {
@@ -349,16 +310,10 @@ func TestTarArchiver_Dir_Exclude_ExcludeSymlinkDirectories(t *testing.T) {
 		t.Errorf("expected no error: %s", err)
 	}
 
-	ensureTarContents(t, tarFilePath, map[string][]byte{
-		"test-dir/test-dir1/file2.txt":                []byte("This is file 2"),
-		"test-dir/test-dir1/file3.txt":                []byte("This is file 3"),
-		"test-dir/test-dir2/file1.txt":                []byte("This is file 1"),
-		"test-dir/test-dir2/file2.txt":                []byte("This is file 2"),
-		"test-dir/test-dir2/file3.txt":                []byte("This is file 3"),
-		"test-dir/test-file.txt":                      []byte("This is test content"),
-		"test-dir-with-symlink-file/test-file.txt":    []byte("This is test content"),
-		"test-dir-with-symlink-file/test-symlink.txt": []byte("This is test content"),
-	})
+	wants := allFixtures()
+	delete(wants, "test-dir/test-dir1/file1.txt")
+	delete(wants, "test-symlink-dir-with-symlink-file/test-symlink.txt")
+	ensureTarContents(t, tarFilePath, wants)
 }
 
 func TestTarArchiver_Dir_Exclude_Glob_ExcludeSymlinkDirectories(t *testing.T) {
