@@ -27,22 +27,22 @@ func TestAccZipArchiveFile_Basic(t *testing.T) {
 					testAccArchiveFileSize(f, &fileSize),
 					r.TestCheckResourceAttrPtr("data.archive_file.foo", "output_size", &fileSize),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_md5", "ea35f0444ea9a3d5641d8760bc2815cc",
+						"data.archive_file.foo", "output_md5", "2979b8426e585514344e6d78b17ed5d9",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_sha", "019c79c4dc14dbe1edb3e467b2de6a6aad148717",
+						"data.archive_file.foo", "output_sha", "6d0527096342115cfb55b18f8420b695d91e2622",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_sha256", "3fb55c931a048943b8d7558dde7c2e4bfc8e04be33b1b55691053d1352391fa7",
+						"data.archive_file.foo", "output_sha256", "865db2315db933c59bc9268455ddd02fd73c501d9547434c42295cccc6dda4a4",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_base64sha256", "P7VckxoEiUO411WN3nwuS/yOBL4zsbVWkQU9E1I5H6c=",
+						"data.archive_file.foo", "output_base64sha256", "hl2yMV25M8WbySaEVd3QL9c8UB2VR0NMQilczMbdpKQ=",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_sha512", "57e2d073dce214609bd61113b90b0b2b7c75034047224d56e35f363c8f2662e3acd561eebf94826a67453411181eca7e1cbf15db1f2fdd496cf13df46b7848c3",
+						"data.archive_file.foo", "output_sha512", "25d2bfbf3bc4daa363433b0167c3a58c9b97a4fcee8a58111fda3d5529b81a4c3527a8f18eadac592722ac10f09db27dd4a9a80ee2dbde4ad6b9a564613d2ce0",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_base64sha512", "V+LQc9ziFGCb1hETuQsLK3x1A0BHIk1W4182PI8mYuOs1WHuv5SCamdFNBEYHsp+HL8V2x8v3Uls8T30a3hIww==",
+						"data.archive_file.foo", "output_base64sha512", "JdK/vzvE2qNjQzsBZ8OljJuXpPzuilgRH9o9VSm4Gkw1J6jxjq2sWScirBDwnbJ91KmoDuLb3krWuaVkYT0s4A==",
 					),
 				),
 			},
@@ -52,22 +52,22 @@ func TestAccZipArchiveFile_Basic(t *testing.T) {
 					testAccArchiveFileSize(f, &fileSize),
 					r.TestCheckResourceAttrPtr("data.archive_file.foo", "output_size", &fileSize),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_md5", "59fbc9e62af3cbc2f588f97498240dae",
+						"data.archive_file.foo", "output_md5", "2985d42029a4249a50ef480dfbee3dac",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_sha", "ce4ee1450ab93ac86e11446649e44cea907b6568",
+						"data.archive_file.foo", "output_sha", "653f0bb73c57782db99e5b8bbdda5bab70250240",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_sha256", "5131387f97167da47aa741df3ab2c82f182f17c514c222538d34708d04e0756b",
+						"data.archive_file.foo", "output_sha256", "4478a74a621dc9d702d99adc0494f8b8556365a693b3b128e6b203a47b917717",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_base64sha256", "UTE4f5cWfaR6p0HfOrLILxgvF8UUwiJTjTRwjQTgdWs=",
+						"data.archive_file.foo", "output_base64sha256", "RHinSmIdydcC2ZrcBJT4uFVjZaaTs7Eo5rIDpHuRdxc=",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_sha512", "eb33eb0f8cd8efe1a5a0b99acbd22ed22dbebb80817f8de6e8fed15c21c52240838d9bb46fb0938846c74f694425551ba60829a6396f91fcfe49d21a1e3bb409",
+						"data.archive_file.foo", "output_sha512", "0b545b786080a05a87690fc1a17329967532970e435d80a34627b79d4e73a1c80ce980610b439cf4eda62ae53e4f560115cbbfccfd2650ffe6712656d8db323b",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_base64sha512", "6zPrD4zY7+GloLmay9Iu0i2+u4CBf43m6P7RXCHFIkCDjZu0b7CTiEbHT2lEJVUbpggppjlvkfz+SdIaHju0CQ==",
+						"data.archive_file.foo", "output_base64sha512", "C1RbeGCAoFqHaQ/BoXMplnUylw5DXYCjRie3nU5zocgM6YBhC0Oc9O2mKuU+T1YBFcu/zP0mUP/mcSZW2NsyOw==",
 					),
 				),
 			},
@@ -77,22 +77,22 @@ func TestAccZipArchiveFile_Basic(t *testing.T) {
 					testAccArchiveFileSize(f, &fileSize),
 					r.TestCheckResourceAttrPtr("data.archive_file.foo", "output_size", &fileSize),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_md5", "b73f64a383716070aa4a29563b8b14d4",
+						"data.archive_file.foo", "output_md5", "53e1fed54b3a677717dffc50f50bdcf8",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_sha", "76d20a402eefd1cfbdc47886abd4e0909616c191",
+						"data.archive_file.foo", "output_sha", "914fc63a70af426f7911567e1360911f23de8d2d",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_sha256", "c9d07cc2dabc9caf6f43bed51fa613c281e6ca58cae3a8d6fae2094b00b3369a",
+						"data.archive_file.foo", "output_sha256", "a0f6160168c1a44dc2e4c63b312fe862c37ab8327e3de61cdc97253751a33fce",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_base64sha256", "ydB8wtq8nK9vQ77VH6YTwoHmyljK46jW+uIJSwCzNpo=",
+						"data.archive_file.foo", "output_base64sha256", "oPYWAWjBpE3C5MY7MS/oYsN6uDJ+PeYc3JclN1GjP84=",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_sha512", "b96ac6b9554a04473a733be36f190422bf7162b4afdb211a0f551713eadf4092459426750646c70383ce6c8b89171b88582a608e5841bfaaafa17004a2a2ca0a",
+						"data.archive_file.foo", "output_sha512", "0664c096095836ca09f207c465a80f61a05377209ca4e21a9238c7bec10840e42c4476f9c13ffcd1bd1c14da221e8a512e423393437dded5fb2bba13b7160cd7",
 					),
 					r.TestCheckResourceAttr(
-						"data.archive_file.foo", "output_base64sha512", "uWrGuVVKBEc6czvjbxkEIr9xYrSv2yEaD1UXE+rfQJJFlCZ1BkbHA4PObIuJFxuIWCpgjlhBv6qvoXAEoqLKCg==",
+						"data.archive_file.foo", "output_base64sha512", "BmTAlglYNsoJ8gfEZagPYaBTdyCcpOIakjjHvsEIQOQsRHb5wT/80b0cFNoiHopRLkIzk0N93tX7K7oTtxYM1w==",
 					),
 				),
 			},

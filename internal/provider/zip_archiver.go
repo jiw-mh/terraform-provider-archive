@@ -4,13 +4,14 @@
 package archive
 
 import (
-	"archive/zip"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/klauspost/compress/zip"
 )
 
 type ZipArchiver struct {

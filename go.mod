@@ -8,6 +8,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-validators v0.18.0
 	github.com/hashicorp/terraform-plugin-go v0.28.0
 	github.com/hashicorp/terraform-plugin-testing v1.13.2
+	github.com/klauspost/compress v1.18.0
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 )
 
